@@ -50,8 +50,11 @@ function reset_game()
 end
 -->8
 --npcs
+--tood: move to inventory
 has_key=false
 has_wheel=false
+need_money=false
+gold=0
 
 npcs={}
 function make_npcs()
@@ -59,6 +62,13 @@ function make_npcs()
 	v.x=4*8
 	v.y=2*8
 	v.script=function()
+		if need_money then
+			say([[oh 1 gold? here]])
+			gold+=5
+			announce([[received 1 gold]])
+			need_money=false
+		end
+	
 		if has_wheel then
 			ask([[give wheel?]], "yes", "no")
 			if ans==1 then
@@ -81,16 +91,30 @@ function make_npcs()
 	npc1.x=13*8
 	npc1.y=13*8
 	npc1.script=function()
-		ask([[can i help you?]],
+		if gold >= 1 then
+			ask([[give gold?]],"yes","no")
+			if ans==1 then
+				gold-=1
+				if ans==1 then
+					say [[thanks it's in my shop.
+			 		take this key]]
+						has_key=true
+						announce [[received: shop key]]
+				end
+			end
+		elseif has_key then
+			say([[my shop is just up there]])
+		else
+			ask([[can i help you?]],
 			"wheel?",
 			"no")
-		if ans==1 then
-			say [[yeah it's in my shop.
-			 take this key]]
-			has_key=true
-			announce [[received: shop key]]
-		else
-			say [[very well, have a good one]]
+			if ans==1 then
+				say [[yes i have a wheel.
+				 that'll be 1 gold]]
+				need_money=true
+			else
+				say [[very well, have a good one]]			
+			end
 		end
 	end
 	
