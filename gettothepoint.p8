@@ -34,7 +34,6 @@ function _draw()
  spr(player.a_fr,player.x,player.y,1,1,player.flip)
 	draw_all(enemies)
 
-
 	if text then
 		rectfill(2,107,125,125,0)
 		print(text, 3,108, text_color)
@@ -164,6 +163,8 @@ function make_player()
 	--(tile in front)
 	player.fx=player.x
 	player.fy=player.y+8
+	player.level=1
+	player.kills=0
 end
 
 function move_player()
@@ -190,6 +191,7 @@ function move_player()
 	end
 	if(btnp(5))then
 		foreach(npcs, check_npc)
+		foreach(enemies, check_enemy)
 	end
 end
 
@@ -408,6 +410,24 @@ function make_enemy()
 		anim_speed=3,
 		fl=false
 	}
+end
+
+function check_enemy(e)
+	if player_in_range(e.x, e.y) then
+		--attack
+		e.hp-=1
+		if e.hp<=0 then
+			del(enemies,e)
+			player.kills+=1
+			calc_xp()
+		end
+	end
+end
+
+function calc_xp()
+	if(player.kills/10 > player.level)then
+		player.level=flr(player.kills/10)
+	end
 end
 __gfx__
 00666660006666600066666000666660006666600066666000066000000660000006600000000000000000000000000000000000000000000000000000000000
