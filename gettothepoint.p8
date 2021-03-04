@@ -421,7 +421,7 @@ enemies={}
 
 function spawn_enemy()
 	--only allow 10 enemy at a time
-	for i=0,100 do
+	for i=0,10 do
 		if (enemies[i]==nil) then
 			enemies[i] = make_enemy(i)
 			break
