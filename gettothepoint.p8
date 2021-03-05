@@ -6,7 +6,6 @@ __lua__
 -- game loop
 
 function _init()
-	make_player()
 	make_npcs()
 	load_lvl(0)
 end
@@ -15,10 +14,9 @@ function _update()
 	if script_active then
 		script_update()
 	else
-		move_player()
+		control_all(players)
 	end
 	
---	anim_npcs()
 	anim_all(npcs)
 	anim_all(enemies)
 	-- enemies
@@ -30,7 +28,7 @@ end
 function _draw()
  cls()
  map(m.cx,m.cy,m.sx,m.sy,m.cw,m.ch,m.l)
- spr(p.a_fr,p.x,p.y,1,1,p.flip)
+ draw_all(players)
  draw_all(npcs)
 	draw_all(enemies)
 
@@ -51,15 +49,10 @@ function _draw()
 end
 
 function reset_game()
-	has_wheel=false
-	has_key=false
+	make_player()
+	load_lvl(0)
 end
 -->8
---npcs
--- inventory
-inv={}
--- quests
-q={}
 --npcs
 npcs={}
 function make_npcs()
@@ -83,12 +76,7 @@ function make_npcs()
 			ask([[give wheel?]], "yes", "no")
 			if ans==1 then
 				say [[thank you so much!]]
-				ask([[♥you win♥, play again?]],
-					"yes", "no")
-				if ans==1 then
-					reset_game()
-					_init()
-				end
+				reset_game()
 			end			
 		else
 			say [[my tire broke off my wagon,
@@ -127,7 +115,7 @@ take this key]]
 			if ans==1 then
 				say [[yes i have a wheel.
 that'll be 1 gold]]
-				q.need_money=true
+				q.need_gold=true
 			else
 				say [[very well, have a good one]]			
 			end
@@ -196,8 +184,11 @@ end
 -->8
 --player
 function make_player()
+	players={}
 	p = {}
 	p.speed=1
+ p.height=1
+	p.width=1
 	p.x=2*8
 	p.y=13*8
 	p.cm=true--collide map
@@ -208,34 +199,25 @@ function make_player()
 	p.fy=p.y+8
 	p.level=1
 	p.kills=0
+	inv={gold=0}
+	q={}
+	add(players,p)
 end
 
-function move_player()
-	move(p)
-	if(btn(0))then
-		p.fx=p.x-8
-		p.fy=p.y
-	 anim(p,6,3,10,true)
+--detect input for all
+function control_all(arr)
+	for p in all(arr) do
+		move(p)
+		--attack/interact
+ 	if(btnp(5))then
+	 	foreach(npcs, check_npc)
+		 foreach(enemies, check_enemy)
+	 end
 	end
-	if(btn(1))then
-		p.fx=p.x+8
-		p.fy=p.y
-	 anim(p,6,3,10)
-	end
-	if(btn(2))then		
-		p.fx=p.x
-		p.fy=p.y-8
-	 anim(p,3,3,10)
-	end
-	if(btn(3))then
-		p.fx=p.x
-		p.fy=p.y+8
-	 anim(p,0,3,10)
-	end
-	if(btnp(5))then
-		foreach(npcs, check_npc)
-		foreach(enemies, check_enemy)
-	end
+end
+
+--move using ai
+function move_all_ai(arr)
 end
 
 --movement
@@ -244,10 +226,30 @@ function move(o)
 	local lx=o.x --last x
 	local ly=o.y --last y
 	
-	if(btn(0)) o.x-=o.speed
- if(btn(1)) o.x+=o.speed
- if(btn(2)) o.y-=o.speed
- if(btn(3)) o.y+=o.speed
+	if btn(0) then
+	 o.x-=o.speed	 
+		o.fx=o.x-8
+		o.fy=o.y
+	 anim(o,6,3,10,true)
+	end
+ if btn(1) then
+  o.x+=o.speed
+		p.fx=p.x+8
+		p.fy=p.y
+	 anim(p,6,3,10)
+ end
+ if btn(2) then
+  o.y-=o.speed		
+		p.fx=p.x
+		p.fy=p.y-8
+	 anim(p,3,3,10)
+ end
+ if btn(3) then
+  o.y+=o.speed
+		p.fx=p.x
+		p.fy=p.y+8
+	 anim(p,0,3,10)
+ end
 	
 	-- collision, revert movement
 	if(cmap(o)) o.x=lx o.y=ly
@@ -326,12 +328,14 @@ function load_lvl(num)
 	if (num==0) then
 		m={cx=-16,cy=0,sx=0,sy=0,cw=120,ch=120,l=nil}
 		script_run(function()
- 		ask([[]],"start")
+ 		ask([[
+ 					  press ❎ to start]],"")
 	 	if ans==1 then
 		 	load_lvl(1)
  		end
 		end)
 	elseif(num==1) then
+		make_player()
  	-- set map
 		m={cx=0,cy=0,sx=0,sy=0,cw=120,ch=120,l=nil}
  	-- add npcs				
