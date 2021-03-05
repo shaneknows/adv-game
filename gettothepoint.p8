@@ -20,7 +20,7 @@ function _update()
 	anim_all(npcs)
 	anim_all(enemies)
 	-- enemies
-	if (rnd(100)>95) then
+	if (rnd(100)>(100-e_fqcy)) then
 		spawn_enemy()
 	end
 end
@@ -330,6 +330,7 @@ function load_lvl(num)
 	enemies={}
 	e_types={}
 	enemy_max=0
+	e_fqcy=0
 	if (num==0) then
 		m={cx=-16,cy=0,sx=0,sy=0,cw=120,ch=120,l=nil}
 		script_run(function()
@@ -350,16 +351,19 @@ function load_lvl(num)
 	 add(npcs,lin)
 	 -- add enemies
 		enemy_max=10
+		e_fqcy=2
 		add(e_types,"bt")
 		-- todo:frequency
 	elseif(num==2) then
 	 add(npcs,lin)
-	 enemy_max=10
+	 enemy_max=20
+		e_fqcy=5
 	 add(e_types,"spdr")
 	elseif(num==3) then
 		add(npcs,lin)
 		add(npcs,npc1)
-		enemy_max=10
+		enemy_max=30
+		e_fqcy=7
 		add(e_types,"skltn")
 	elseif(num==4) then
 	 add(npcs,npc1)
@@ -479,44 +483,7 @@ function check_npc(npc)
 	end
 end
 -->8
---enemies
---bat
-function get_bt()
-return {
-	hp=1,
-	sprite=128,
-	height=1,
-	width=1,
-	num_frames=2,
-	anim_speed=3,
-	fl=false,
-	spwn_t="edge"
-}
-end
---spider
-function get_spdr()
-return{
-	hp=1,
-	sprite=160,
-	height=1,
-	width=1,
-	num_frames=2,
-	anim_speed=3,
-	fl=false
-}
-end
---skeleton
-function get_skltn()
-return{
-	hp=5,
-	sprite=144,
-	height=1,
-	width=1,
-	num_frames=2,
-	anim_speed=3,
-	fl=false
-}
-end
+--enemy code
 
 function spawn_enemy()
  if count(e_types)<=0 then
@@ -591,11 +558,41 @@ end
 
 function get_by_type(t)
 	if t=="bt" then
-		return get_bt()
+	 --bat
+		return {
+	  hp=1,
+	  sprite=128,
+	  height=1,
+	  width=1,
+	  num_frames=2,
+	  anim_speed=3,
+	  fl=false,
+	  spwn_t="edge"
+  }
 	elseif t=="spdr" then
-		return get_spdr()
+	 --spider
+	 return{
+	  hp=1,
+	  sprite=160,
+	  height=1,
+	  width=1,
+	  num_frames=2,
+	  anim_speed=3,
+	  fl=false
+  }
+	elseif t=="skltn" then
+	 --skeleton
+  return{
+	  hp=5,
+	  sprite=144,
+	  height=1,
+	  width=1,
+	  num_frames=2,
+	  anim_speed=3,
+	  fl=false
+  }
 	else
-		return get_skltn()
+	 return {}
 	end
 end
 __gfx__
