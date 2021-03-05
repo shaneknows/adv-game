@@ -213,6 +213,9 @@ function control_all(arr)
 	 	foreach(npcs, check_npc)
 		 foreach(enemies, check_enemy)
 	 end
+	 if(btnp(4))then
+	  load_lvl(lvl+1)
+	 end
 	end
 end
 
@@ -325,6 +328,8 @@ function load_lvl(num)
 	lvl=num
 	npcs={}
 	enemies={}
+	e_types={}
+	enemy_max=0
 	if (num==0) then
 		m={cx=-16,cy=0,sx=0,sy=0,cw=120,ch=120,l=nil}
 		script_run(function()
@@ -345,15 +350,21 @@ function load_lvl(num)
 	 add(npcs,lin)
 	 -- add enemies
 		enemy_max=10
-		-- todo:enemy_types/frequency
+		add(e_types,"bt")
+		-- todo:frequency
 	elseif(num==2) then
-	
+	 add(npcs,lin)
+	 enemy_max=10
+	 add(e_types,"spdr")
 	elseif(num==3) then
-	
+		add(npcs,lin)
+		add(npcs,npc1)
+		enemy_max=10
+		add(e_types,"skltn")
 	elseif(num==4) then
-	
+	 add(npcs,npc1)
 	elseif(num==5) then
-	
+	 add(npcs,v)
 	end
 end
 -->8
@@ -469,11 +480,49 @@ function check_npc(npc)
 end
 -->8
 --enemies
-enemies={}
-enemy_max=0
+--bat
+function get_bt()
+return {
+	hp=1,
+	sprite=128,
+	height=1,
+	width=1,
+	num_frames=2,
+	anim_speed=3,
+	fl=false,
+	spwn_t="edge"
+}
+end
+--spider
+function get_spdr()
+return{
+	hp=1,
+	sprite=160,
+	height=1,
+	width=1,
+	num_frames=2,
+	anim_speed=3,
+	fl=false
+}
+end
+--skeleton
+function get_skltn()
+return{
+	hp=5,
+	sprite=144,
+	height=1,
+	width=1,
+	num_frames=2,
+	anim_speed=3,
+	fl=false
+}
+end
 
 function spawn_enemy()
-	--only allow 10 enemy at a time
+ if count(e_types)<=0 then
+  return
+ end
+	--restrict by max
 	for i=0,enemy_max do
 		if (enemies[i]==nil) then
 			enemies[i] = make_enemy(i)
@@ -483,50 +532,14 @@ function spawn_enemy()
 end
 
 function make_enemy()
-	local en=flr(rnd(3))
-	if(en==0)then
-		--bat
-		e={
-			hp=1,
-			sprite=128,
-			height=1,
-			width=1,
-			num_frames=2,
-			anim_speed=3,
-			fl=false
-		}
-		spawn_location(e,"edge")
-		return e
-	elseif(en==1)then
-		--skeleton
-		e={
-			hp=5,
-			sprite=144,
-			height=1,
-			width=1,
-			num_frames=2,
-			anim_speed=3,
-			fl=false
-		}
-		spawn_location(e)
-		return e
-	else
-		--spider
-		e={
-			hp=1,
-			sprite=160,
-			height=1,
-			width=1,
-			num_frames=2,
-			anim_speed=3,
-			fl=false
-		}
-		spawn_location(e)
-		return e
-	end
+	local e=flr(rnd(count(e_types)))
+	local e_type=e_types[e+1]
+	local en=get_by_type(e_type)	
+	spawn_loc(en,en.spwn_t)
+	return en
 end
 
-function spawn_location(e,t)
+function spawn_loc(e,t)
 	if (t=="edge")then
 		-- only spawn on edges
 		loc=flr(rnd(2))
@@ -573,6 +586,16 @@ end
 function calc_xp()
 	if(p.kills/10 > p.level)then
 		p.level=flr(p.kills/10)
+	end
+end
+
+function get_by_type(t)
+	if t=="bt" then
+		return get_bt()
+	elseif t=="spdr" then
+		return get_spdr()
+	else
+		return get_skltn()
 	end
 end
 __gfx__
