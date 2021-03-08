@@ -32,7 +32,12 @@ function _draw()
  draw_all(players)
  draw_all(npcs)
 	draw_all(enemies)
-	if (p)	print(p.hp,10,60,9)
+	--player stats
+	if (p)then
+	 rectfill(2,2,22,14,0)
+		print(p.hp.."/"..50,3,3,9)
+		print("lvl:"..p.lvl,3,9,9)
+ end
 
 	if text then
 		rectfill(2,107,125,125,0)
@@ -195,7 +200,7 @@ function make_player()
 	--(tile in front)
 	p.fx=p.x
 	p.fy=p.y+8
-	p.level=1
+	p.lvl=1
 	p.kills=0
 	p.atk_ts=10--frames
 	p.atk_cd=0--cool down counter
@@ -307,17 +312,19 @@ function draw_all(group)
 end
 -->8
 --map code
-
-function cmap(o)
+--tx and ty allow specifying potential square
+function cmap(o,tx,ty)
 	local ct=false
 	local cb=false
+	if(not tx)tx=o.x
+	if(not ty)ty=o.y
 	
 	--if colliding with map tiles
 	if(o.cm) then
-		local x1=o.x/8
-		local y1=o.y/8
-		local x2=(o.x+7)/8
-		local y2=(o.y+7)/8
+		local x1=tx/8
+		local y1=ty/8
+		local x2=(tx+7)/8
+		local y2=(ty+7)/8
 		local a=fget(mget(x1,y1),0)
 		local b=fget(mget(x1,y2),0)
 		local c=fget(mget(x2,y2),0)
@@ -327,8 +334,8 @@ function cmap(o)
 	
 	--if colliding with world
 	if(o.cw) then
-     cb=(o.x<0 or o.x+8>m.cw or
-         o.y<0 or o.y+8>m.ch)
+     cb=(tx<0 or tx+8>m.cw or
+         ty<0 or ty+8>m.ch)
 	end
 	
 	return ct or cb
@@ -345,7 +352,7 @@ function load_lvl(num)
 	e_types={}
 	enemy_max=0
 	e_fqcy=0
-	if (num==0) then
+	if (lvl==0) then
 		m={cx=-16,cy=0,sx=0,sy=0,cw=120,ch=120,l=nil}
 		script_run(function()
  		ask([[
@@ -354,7 +361,7 @@ function load_lvl(num)
 		 	load_lvl(1)
  		end
 		end)
-	elseif(num==1) then
+	elseif(lvl==1) then
 		make_player()
  	-- set map
 		m={cx=0,cy=0,sx=0,sy=0,cw=120,ch=120,l=nil}
@@ -367,33 +374,32 @@ function load_lvl(num)
 		enemy_max=3
 		e_fqcy=2
 		add(e_types,"bt")
-	elseif(num==2) then
+	elseif(lvl==2) then
 		make_player()
 	 add(npcs,lin)
 	 enemy_max=5
 		e_fqcy=5
 	 add(e_types,"spdr")
-	elseif(num==3) then
+	elseif(lvl==3) then
 		make_player()
 		add(npcs,lin)
 		add(npcs,npc1)
 		enemy_max=8
 		e_fqcy=2
 		add(e_types,"skltn")
-	elseif(num==4) then
+	elseif(lvl==4) then
 		make_player()
 	 add(npcs,npc1)
-	 ememy_max=10
+	 enemy_max=10
 	 e_fqcy=20
-		add(e_types,"spdr")
+		add(e_types,"wlf")
 		add(e_types,"skltn")
-	elseif(num==5) then
+	elseif(lvl==5) then
 		make_player()
 	 add(npcs,v)
-	 ememy_max=10
-	 e_fqcy=20
-		add(e_types,"bt")
-		add(e_types,"spdr")
+	 enemy_max=10
+	 e_fqcy=30
+		add(e_types,"zmb")
 		add(e_types,"skltn")
 	else
 		load_lvl(0)
@@ -579,8 +585,8 @@ function check_enemy(e)
 end
 
 function calc_xp()
-	if(p.kills/10 > p.level)then
-		p.level=flr(p.kills/10)
+	if(p.kills/10 > p.lvl)then
+		p.lvl=flr(p.kills/10)
 	end
 end
 
@@ -616,7 +622,8 @@ function get_by_type(t)
    atk_ts=120,--frames
    atk_cd=0,--cool down counter
 	  fx=0,
-	  fy=0
+	  fy=0,
+	  cm=true
   }
 	elseif t=="skltn" then
 	 --skeleton
@@ -632,7 +639,40 @@ function get_by_type(t)
    atk_ts=120,--frames
    atk_cd=0,--cool down counter
 	  fx=0,
-	  fy=0
+	  fy=0,
+	  cm=true
+  }
+ elseif t=="wlf" then
+  return{
+ 	  hp=5,
+ 	  sprite=176,
+ 	  height=1,
+ 	  width=1,
+ 	  num_frames=2,
+ 	  anim_speed=3,
+ 	  fl=false,
+ 	  speed=.1,
+    atk_ts=120,--frames
+    atk_cd=0,--cool down counter
+ 	  fx=0,
+ 	  fy=0,
+	   cm=true
+   }
+ elseif t=="zmb" then
+  return{
+	  hp=5,
+	  sprite=132,
+	  height=1,
+	  width=1,
+	  num_frames=3,
+	  anim_speed=2,
+	  fl=false,
+	  speed=.1,
+   atk_ts=120,--frames
+   atk_cd=0,--cool down counter
+	  fx=0,
+	  fy=0,
+	  cm=true
   }
 	else
 	 return {}
@@ -680,10 +720,10 @@ function move_enemy(e,t)
  -- of t to hit
  if (object_in_range(e,tx,ty))return
  
-	local cl=cmap(e)
-	local cr=cmap(e)
-	local ct=cmap(e)
-	local cb=cmap(e)
+	local cl=cmap(e,e.x-1)
+	local cr=cmap(e,e.x+1)
+	local ct=cmap(e,e.x,e.y-1)
+	local cb=cmap(e,e.x,e.y+1)
 	
  local ld=dst(ex-4,tx+4,ey+4,ty+4)
  local rd=dst(ex+11,tx+4,ey+4,ty+4)
@@ -707,6 +747,7 @@ function move_enemy(e,t)
  if(to and td==sd) e.m=2
  if(bo and bd==sd) e.m=3
 
+ 
  if(e.m==0)then
   e.x-=e.speed
   e.fx=e.x-4
@@ -722,7 +763,10 @@ function move_enemy(e,t)
  if(e.m==3)then
   e.y+=e.speed
   e.fy=e.y+4
- end
+ end 
+ 
+	-- collision, revert movement
+	if(cmap(e)) e.x=ex e.y=ey
 end
 __gfx__
 00666660006666600066666000666660006666600066666000066000000660000006600000000000000000000000000000000000000000000000000000000000
