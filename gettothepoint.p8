@@ -17,6 +17,7 @@ function _update()
 		control_all(players)
 	end
 	
+	move_all(enemies)
 	anim_all(npcs)
 	anim_all(enemies)
 	-- enemies
@@ -31,6 +32,7 @@ function _draw()
  draw_all(players)
  draw_all(npcs)
 	draw_all(enemies)
+	if (p)	print(p.hp,10,60,9)
 
 	if text then
 		rectfill(2,107,125,125,0)
@@ -46,11 +48,6 @@ function _draw()
 			      i==ans and 7 or 5)
 		end
 	end
-end
-
-function reset_game()
-	make_player()
-	load_lvl(0)
 end
 -->8
 --npcs
@@ -186,6 +183,7 @@ end
 function make_player()
 	players={}
 	p = {}
+	p.hp=50
 	p.speed=1
  p.height=1
 	p.width=1
@@ -199,6 +197,8 @@ function make_player()
 	p.fy=p.y+8
 	p.level=1
 	p.kills=0
+	p.atk_ts=10--frames
+	p.atk_cd=0--cool down counter
 	inv={gold=0}
 	q={}
 	add(players,p)
@@ -211,11 +211,20 @@ function control_all(arr)
 		--attack/interact
  	if(btnp(5))then
 	 	foreach(npcs, check_npc)
-		 foreach(enemies, check_enemy)
+	 	--only attack if cooldown=0
+	 	if (p.atk_cd==0)then
+ 		 foreach(enemies, check_enemy)
+ 		 p.atk_cd=p.atk_ts
+ 		end
 	 end
 	 if(btnp(4))then
 	  load_lvl(lvl+1)
 	 end
+	 --attacking
+	 if p.atk_cd>0 then
+	 	p.atk_cd-=1
+	 end
+	 
 	end
 end
 
@@ -264,6 +273,7 @@ end
 function anim(o,sf,nf,sp,fl)
 	if (not o.a_ct) o.a_ct=0
 	if (not o.a_st) o.a_st=0
+	if(not o.atk_cd) o.atk_cd=0
 	
 	o.a_ct+=1
 	
@@ -286,14 +296,17 @@ end
 function draw_all(group)
 	for i in all(group)do
 		 spr(i.a_fr,i.x,i.y,i.height,i.width,i.flip)
+		 -- attacking
+		 if (not i.atk_cd) i.atk_cd=0
+		 if (i.atk_cd > 0) then
+		  --todo: custom anims and 
+		  --stop before cooldown
+		  spr(153,i.x,i.y,i.height,i.width)
+		 end
 	end
 end
 -->8
 --map code
-function load_map()
-	--w=128
---	h=128
-end
 
 function cmap(o)
 	local ct=false
@@ -326,6 +339,7 @@ lvl=0
 m={}
 function load_lvl(num)
 	lvl=num
+	players={}
 	npcs={}
 	enemies={}
 	e_types={}
@@ -350,25 +364,39 @@ function load_lvl(num)
 	 add(npcs,door)
 	 add(npcs,lin)
 	 -- add enemies
-		enemy_max=10
+		enemy_max=3
 		e_fqcy=2
 		add(e_types,"bt")
-		-- todo:frequency
 	elseif(num==2) then
+		make_player()
 	 add(npcs,lin)
-	 enemy_max=20
+	 enemy_max=5
 		e_fqcy=5
 	 add(e_types,"spdr")
 	elseif(num==3) then
+		make_player()
 		add(npcs,lin)
 		add(npcs,npc1)
-		enemy_max=30
-		e_fqcy=7
+		enemy_max=8
+		e_fqcy=2
 		add(e_types,"skltn")
 	elseif(num==4) then
+		make_player()
 	 add(npcs,npc1)
+	 ememy_max=10
+	 e_fqcy=20
+		add(e_types,"spdr")
+		add(e_types,"skltn")
 	elseif(num==5) then
+		make_player()
 	 add(npcs,v)
+	 ememy_max=10
+	 e_fqcy=20
+		add(e_types,"bt")
+		add(e_types,"spdr")
+		add(e_types,"skltn")
+	else
+		load_lvl(0)
 	end
 end
 -->8
@@ -465,18 +493,18 @@ function simultaneously(...)
 	until complete
 end
 
-function player_in_range(x, y)
-	local px,py = p.fx, p.fy
-	return (px <=x+4 and
-				 				px >=x-4	and
- 								py <=y+4 and
-				 				py >=y-4)
+function object_in_range(o,tx,ty)
+	local px,py = o.fx, o.fy
+	return (px <=tx+4 and
+				 				px >=tx-4	and
+ 								py <=ty+4 and
+				 				py >=ty-4)
 end
 
 --attempt to run a script
 --if player is near npc
 function check_npc(npc)
-	if player_in_range(npc.x, npc.y) then
+	if object_in_range(p, npc.x, npc.y) then
 		if npc.script then
 			script_run(npc.script)
 		end
@@ -539,7 +567,7 @@ function spawn_loc(e,t)
 end
 
 function check_enemy(e)
-	if player_in_range(e.x, e.y) then
+	if object_in_range(p,e.x,e.y) then
 		--attack
 		e.hp-=1
 		if e.hp<=0 then
@@ -560,14 +588,19 @@ function get_by_type(t)
 	if t=="bt" then
 	 --bat
 		return {
-	  hp=1,
+	  hp=2,
 	  sprite=128,
 	  height=1,
 	  width=1,
 	  num_frames=2,
 	  anim_speed=3,
 	  fl=false,
-	  spwn_t="edge"
+	  spwn_t="edge",
+	  speed=.5,
+   atk_ts=120,--frames
+   atk_cd=0,--cool down counter
+	  fx=0,
+	  fy=0
   }
 	elseif t=="spdr" then
 	 --spider
@@ -578,7 +611,12 @@ function get_by_type(t)
 	  width=1,
 	  num_frames=2,
 	  anim_speed=3,
-	  fl=false
+	  fl=false,
+	  speed=.1,
+   atk_ts=120,--frames
+   atk_cd=0,--cool down counter
+	  fx=0,
+	  fy=0
   }
 	elseif t=="skltn" then
 	 --skeleton
@@ -589,11 +627,102 @@ function get_by_type(t)
 	  width=1,
 	  num_frames=2,
 	  anim_speed=3,
-	  fl=false
+	  fl=false,
+	  speed=.1,
+   atk_ts=120,--frames
+   atk_cd=0,--cool down counter
+	  fx=0,
+	  fy=0
   }
 	else
 	 return {}
 	end
+end
+
+--move all non-player
+function move_all(group)
+	for i in all(group)do
+		move_enemy(i,players[1])
+		-- update atk ctr
+		if i.atk_cd>0 then
+	 	i.atk_cd-=1
+	 else
+	  attack_player(i)
+	 end	 
+	end
+end
+
+function attack_player(e)
+	if (object_in_range(e,p.x,p.y))then
+	 --attacking
+	 --todo maybe add rnd here too
+	 if e.atk_cd==0 then
+	 	e.atk_cd=e.atk_ts
+	 	p.hp-=1
+	 end
+	end
+end
+
+-- ai
+
+-- distance
+function dst(fx,tx,fy,ty)
+  return sqrt((fx-tx)^2+(fy-ty)^2)
+end
+
+function move_enemy(e,t)
+ local ex=e.x
+ local ey=e.y
+ local tx=t.x
+ local ty=t.y
+ 
+ -- check if within range
+ -- of t to hit
+ if (object_in_range(e,tx,ty))return
+ 
+	local cl=cmap(e)
+	local cr=cmap(e)
+	local ct=cmap(e)
+	local cb=cmap(e)
+	
+ local ld=dst(ex-4,tx+4,ey+4,ty+4)
+ local rd=dst(ex+11,tx+4,ey+4,ty+4)
+ local td=dst(ex+4,tx+4,ey-4,ty+4)
+ local bd=dst(ex+4,tx+4,ey+11,ty+4)
+	
+ local lo=not cl and e.m!=1 -- "left open" is true if there's no collision left and we're not moving right
+ local ro=not cr and e.m!=0 -- "right open" is true if there's no collision right and we're not moving left
+ local to=not ct and e.m!=3
+ local bo=not cb and e.m!=2
+ 
+ -- shortest distance
+ local sd = 128
+ if (lo) sd=ld
+ if (ro and rd<sd)sd=rd
+ if(to and td<sd)sd=td
+ if(bo and bd<sd)sd=bd
+ 
+ if(lo and ld==sd) e.m=0
+ if(ro and rd==sd) e.m=1
+ if(to and td==sd) e.m=2
+ if(bo and bd==sd) e.m=3
+
+ if(e.m==0)then
+  e.x-=e.speed
+  e.fx=e.x-4
+ end
+ if(e.m==1)then
+  e.x+=e.speed
+  e.fx=e.x+4
+ end
+ if(e.m==2)then
+  e.y-=e.speed
+  e.fy=e.y-4
+ end
+ if(e.m==3)then
+  e.y+=e.speed
+  e.fy=e.y+4
+ end
 end
 __gfx__
 00666660006666600066666000666660006666600066666000066000000660000006600000000000000000000000000000000000000000000000000000000000
@@ -668,14 +797,14 @@ bbbbbbbbbbbbbbbbbb355553355533b3335bbbbb3bb33333bbb33333333333bbbbbbbb4444444222
 00001010000010100000101000001010035535330355353033553530333555300335553003355533005553000055530000000000000000000000000000000000
 00000000000000000000000000000000003533000055330000553500005355000053550000535500005300000053000000000000000000000000000000000000
 00022200000222000002220000022200000005000030050000300000005000000050030000000300030500000030500000000000000000000000000000000000
-66077700000777006607770000077700000777660007770000000000000000000000000000000000000000000000000000000000000000000000000000000000
+66077700000777006607770000077700000777660007770000000000000000000000000080008008000000000000000000000000000000000000000000000000
 66017100660171006607770066077700000771660007716600000000000000000000000000000000000000000000000000000000000000000000000000000000
-06077700660777000607770066077700000077600000776600000000000000000000000000000000000000000000000000000000000000000000000000000000
-07707070067070700770707006707070000070700000706000000000000000000000000000000000000000000000000000000000000000000000000000000000
-04077707070777070407770707077707000777400007777000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00007000040070000000700004007000007070000070704000000000000000000000000000000000000000000000000000000000000000000000000000000000
+06077700660777000607770066077700000077600000776600000000000000000000000000800800000000000000000000000000000000000000000000000000
+07707070067070700770707006707070000070700000706000000000000000000000000080000000000000000000000000000000000000000000000000000000
+04077707070777070407770707077707000777400007777000000000000000000000000000000008000000000000000000000000000000000000000000000000
+00007000040070000000700004007000007070000070704000000000000000000000000000800800000000000000000000000000000000000000000000000000
 00077700000777000007770000077700000777000007770000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00070700000707000007070000070700000707000007070000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00070700000707000007070000070700000707000007070000000000000000000000000080080008000000000000000000000000000000000000000000000000
 09900090009000900990009000900090000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00091110090911100009111009091110000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00011111000111110001111100011111000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
