@@ -321,9 +321,9 @@ function cmap(o,tx,ty)
 	
 	--if colliding with map tiles
 	if(o.cm) then
-		local x1=tx/8
+		local x1=tx/8+((lvl-1)*16)
 		local y1=ty/8
-		local x2=(tx+7)/8
+		local x2=(tx+7)/8+((lvl-1)*16)
 		local y2=(ty+7)/8
 		local a=fget(mget(x1,y1),0)
 		local b=fget(mget(x1,y2),0)
@@ -353,10 +353,11 @@ function load_lvl(num)
 	enemy_max=0
 	e_fqcy=0
 	if (lvl==0) then
-		m={cx=-16,cy=0,sx=0,sy=0,cw=120,ch=120,l=nil}
+		m={cx=-16,cy=0,sx=0,sy=0,cw=128,ch=128,l=nil}
 		script_run(function()
- 		ask([[
- 					  press ❎ to start]],"")
+ 		say([[
+ 		 press ❎ to interact
+ 			press 🅾️ to level jump]],"")
 	 	if ans==1 then
 		 	load_lvl(1)
  		end
@@ -364,7 +365,7 @@ function load_lvl(num)
 	elseif(lvl==1) then
 		make_player()
  	-- set map
-		m={cx=0,cy=0,sx=0,sy=0,cw=120,ch=120,l=nil}
+		m={cx=0,cy=0,sx=0,sy=0,cw=128,ch=128,l=nil}
  	-- add npcs				
 	 add(npcs,v)
 	 add(npcs,npc1)
@@ -377,7 +378,7 @@ function load_lvl(num)
 	elseif(lvl==2) then
 		make_player()
 		 	-- set map
-		m={cx=16,cy=0,sx=0,sy=0,cw=120,ch=120,l=nil}
+		m={cx=16,cy=0,sx=0,sy=0,cw=128,ch=128,l=nil}
 	 add(npcs,lin)
 	 enemy_max=5
 		e_fqcy=5
@@ -385,7 +386,7 @@ function load_lvl(num)
 	elseif(lvl==3) then
 		make_player()
 		 	-- set map
-		m={cx=32,cy=0,sx=0,sy=0,cw=120,ch=120,l=nil}
+		m={cx=32,cy=0,sx=0,sy=0,cw=128,ch=128,l=nil}
 		add(npcs,lin)
 		add(npcs,npc1)
 		enemy_max=8
@@ -394,7 +395,7 @@ function load_lvl(num)
 	elseif(lvl==4) then
 		make_player()
 		 	-- set map
-		m={cx=48,cy=0,sx=0,sy=0,cw=120,ch=120,l=nil}
+		m={cx=48,cy=0,sx=0,sy=0,cw=128,ch=128,l=nil}
 	 add(npcs,npc1)
 	 enemy_max=10
 	 e_fqcy=20
@@ -403,7 +404,7 @@ function load_lvl(num)
 	elseif(lvl==5) then
 		make_player()
 		-- set map
-		m={cx=64,cy=0,sx=0,sy=0,cw=120,ch=120,l=nil}
+		m={cx=64,cy=0,sx=0,sy=0,cw=128,ch=128,l=nil}
 	 add(npcs,v)
 	 enemy_max=10
 	 e_fqcy=30
