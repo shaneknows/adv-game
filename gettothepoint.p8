@@ -390,7 +390,7 @@ function load_lvl(num)
 		add(npcs,lin)
 		add(npcs,npc1)
 		enemy_max=8
-		e_fqcy=2
+		e_fqcy=10
 		add(e_types,"skltn")
 	elseif(lvl==4) then
 		make_player()
@@ -568,7 +568,7 @@ function spawn_loc(e,t)
 		for x=0,15 do
 			for y=0,15 do
 				--flag 1=solid ground
-				if (fget(mget(x,y),1))then
+				if (fget(mget(x+((lvl-1)*16),y),1))then
 					add(emp_spc,{x=x*8,y=y*8})
 				end
 			end	
