@@ -19,6 +19,8 @@ function _update()
 	
 	move_all(enemies)
 	anim_all(npcs)
+ if(p) anim_atk(p)
+ foreach(enemies, anim_atk)
 	-- enemies
 	if (rnd(100)>(100-e_fqcy)) then
 		spawn_enemy()
@@ -35,7 +37,7 @@ function _draw()
 	if (p)then
 	 rectfill(2,2,22,14,0)
 		print(p.hp.."/"..p.max_hp,3,3,9)
-		print("lvl:"..p.lvl,3,9,9)
+		print("lvl:"..p.lvl,3,9,9)		
  end
 
 	if text then
@@ -201,7 +203,7 @@ function make_player()
 	p.fx=p.x
 	p.fy=p.y+4
 	p.kills=0
-	p.atk=get_attack("p")
+	p.atk=get_attack("s_dwn")
 	inv={gold=0}
 	q={}
 end
@@ -234,31 +236,38 @@ function move(o)
 	local lx=o.x --last x
 	local ly=o.y --last y
 	
+ local acd=o.atk.cd
 	if btn(0) then
 	 o.x-=o.speed	 
 		o.fx=o.x-4
 		o.fy=o.y
+		o.atk=get_attack("s_lt")
 	 anim(o,6,3,10,true)
 	end
  if btn(1) then
   o.x+=o.speed
 		o.fx=o.x+4
 		o.fy=o.y
+		o.atk=get_attack("s_rt")
 	 anim(o,6,3,10)
  end
  if btn(2) then
   o.y-=o.speed		
 		o.fx=o.x
 		o.fy=o.y-4
+		o.atk=get_attack("s_up")
 	 anim(o,3,3,10)
  end
  if btn(3) then
   o.y+=o.speed
 		o.fx=o.x
 		o.fy=o.y+4
+		o.atk=get_attack("s_dwn")
 	 anim(o,0,3,10)
  end
-	
+ --reset cooldown
+	o.atk.cd=acd
+ 	
 	-- collision, revert movement
 	if(cmap(o)) o.x=lx o.y=ly
 end
@@ -269,6 +278,7 @@ end
 function anim(o,sf,nf,sp,fl)
 	if (not o.a_ct) o.a_ct=0
 	if (not o.a_st) o.a_st=0
+	if (not o.a_fr) o.a_fr=sf
 	
 	o.a_ct+=1
 	
@@ -278,7 +288,9 @@ function anim(o,sf,nf,sp,fl)
 	end
 	o.flip=fl
 	o.a_fr=sf+o.a_st
-	
+end
+
+function anim_atk(o)
 	--attack anim
  if (o.atk and
   o.atk.cd > o.atk.ts-o.atk.af)then
@@ -302,11 +314,20 @@ function draw_all(group)
 end
 
 function draw_o(i)
- spr(i.a_fr,i.x,i.y,i.height,i.width,i.flip)
+ --drw_btm means we want the attack
+ --drawn first, so skip this
+ if(not i.atk or not i.atk.drw_btm)then
+  spr(i.a_fr,i.x,i.y,i.height,i.width,i.flip)
+ end
+ 
  -- attacking
  if (i.atk and
   i.atk.cd > i.atk.ts-i.atk.af) then
-  spr(i.atk.a_fr,i.fx,i.fy,i.height,i.width)
+  spr(i.atk.a_fr,i.fx,i.fy,i.height,i.width,i.atk.f)
+ end
+ 
+ if(not i.atk or i.atk.drw_btm)then
+  spr(i.a_fr,i.x,i.y,i.height,i.width,i.flip)
  end
 end
 
@@ -328,19 +349,52 @@ function get_attack(at)
    cd=0,--cool down counter
    af=20,
    sprite=164,--atk sprite
-   num_frames=3,
-   anim_speed=2
-  }
- else
-  --player
-  return {  
-   ts=20,--frames
-   cd=0,--cool down counter
-   af=20,
-   sprite=165,--atk sprite
    num_frames=2,
    anim_speed=3
- }
+  }
+ elseif(at=="s_up")then
+  --sword
+  return {  
+   ts=30,--frames
+   cd=0,--cool down counter
+   af=10,
+   sprite=164,--atk sprite
+   num_frames=1,
+   anim_speed=2,
+   drw_btm=true--below sprite
+  }
+ elseif(at=="s_rt")then
+  --sword
+  return {  
+   ts=30,--frames
+   cd=0,--cool down counter
+   af=10,
+   sprite=164,--atk sprite
+   num_frames=1,
+   anim_speed=2,
+   f=true
+  }
+ elseif(at=="s_dwn")then
+  --sword
+  return {  
+   ts=30,--frames
+   cd=0,--cool down counter
+   af=10,
+   sprite=165,--atk sprite
+   num_frames=1,
+   anim_speed=2
+  }
+ elseif(at=="s_lt")then
+  --sword
+  return {  
+   ts=30,--frames
+   cd=0,--cool down counter
+   af=10,
+   sprite=164,--atk sprite
+   num_frames=1,
+   anim_speed=2,
+   drw_btm=true
+  }
  end
 end
 -->8
@@ -379,7 +433,6 @@ lvl=0
 m={}
 function load_lvl(num)
 	lvl=num
-	p=nil
 	npcs={}
 	enemies={}
 	e_types={}
@@ -409,16 +462,14 @@ function load_lvl(num)
 		e_fqcy=2
 		add(e_types,"bt")
 	elseif(lvl==2) then
-		make_player()
-		 	-- set map
+		-- set map
 		m={cx=16,cy=0,sx=0,sy=0,cw=128,ch=128,l=nil}
 	 add(npcs,lin)
 	 enemy_max=5
 		e_fqcy=5
 	 add(e_types,"spdr")
 	elseif(lvl==3) then
-		make_player()
-		 	-- set map
+ 	-- set map
 		m={cx=32,cy=0,sx=0,sy=0,cw=128,ch=128,l=nil}
 		add(npcs,lin)
 		add(npcs,npc1)
@@ -426,8 +477,7 @@ function load_lvl(num)
 		e_fqcy=10
 		add(e_types,"skltn")
 	elseif(lvl==4) then
-		make_player()
-		 	-- set map
+	 -- set map
 		m={cx=48,cy=0,sx=0,sy=0,cw=128,ch=128,l=nil}
 	 add(npcs,npc1)
 	 enemy_max=10
@@ -435,7 +485,6 @@ function load_lvl(num)
 		add(e_types,"wlf")
 		add(e_types,"skltn")
 	elseif(lvl==5) then
-		make_player()
 		-- set map
 		m={cx=64,cy=0,sx=0,sy=0,cw=128,ch=128,l=nil}
 	 add(npcs,v)
@@ -443,6 +492,26 @@ function load_lvl(num)
 	 e_fqcy=30
 		add(e_types,"zmb")
 		add(e_types,"skltn")
+	elseif(lvl==6) then
+	 if (p.hp>0) then
+	  script_run(function()
+ 		 say([[
+ 		  ★you win!★
+ 			 press ❎ to play again]],"")
+	 	 if ans==1 then
+		 	 load_lvl(1)
+ 		 end
+		 end)
+		else
+		 script_run(function()
+ 		say([[
+ 		 you died. 
+ 		 press ❎ to try again]],"")
+	 	if ans==1 then
+		 	load_lvl(1)
+ 		end
+		end)
+		end
 	else
 		load_lvl(0)
 	end
@@ -737,6 +806,8 @@ function attack_player(e)
 	 if e.atk.cd==0 then
 	 	e.atk.cd=e.atk.ts
 	 	p.hp-=1
+	 	--player dead
+	 	if(p.hp <=0)load_lvl(6)
 	 end
 	end
 end
@@ -896,14 +967,14 @@ bbbbbbbbbbbbbbbbbb355553355533b3335bbbbb3bb33333bbb33333333333bbbbbbbb4444444222
 00007000100070000000700010007000000000000070070007700770000000000000000000800800000000000000000000000000000000000000000000000000
 00077700000777000007770000077700007007000770077088888888000000000000000000000000000000000000000000000000000000000000000000000000
 00070f00000f070000070f00000f0700077007708888888888888888000000000000000080080008000000000000000000000000000000000000000000000000
-09900090009000900990009000900090067000000000076010000000000000000000000000000000000000000000000000000000000000000000000000000000
-00091110090911100009111009091110056600000000655001011000000000000000000000000000000000000000000000000000000000000000000000000000
-00011111000111110001111100011111005660100106550000110000000000000000000000000000000000000000000000000000000000000000000000000000
-99111111091111119911111109111111000561100115500001156000000000000000000000000000000000000000000000000000000000000000000000000000
-01211111912111110111111191111111000011000011000001055600000000000000000000000000000000000000000000000000000000000000000000000000
-01191919011919190119191901191919000110100101100000005570000000000000000000000000000000000000000000000000000000000000000000000000
-00909090000909090090909000090909000000011000000000000550000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+09900090009000900990009000900090000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00091110090911100009111009091110067000000101100000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00011111000111110001111100011110056600000011000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+99111111091111119911111109111110005660100116600000000000000000000000000000000000000000000000000000000000000000000000000000000000
+01211111912111110111111191111110000561100105660000000000000000000000000000000000000000000000000000000000000000000000000000000000
+01191919011919190119191901191910000011000000567000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00909090000909090090909000090900000110100000055000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 50050005500500505005000550050050000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 55550005555500055555000555550005000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
